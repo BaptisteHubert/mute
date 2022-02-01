@@ -18,7 +18,7 @@ services:
       context: .
       dockerfile: DockerfileSigver
     ports:
-      - 8010:8010
+      - 8011:8010
 
 
 #   pulsar:
