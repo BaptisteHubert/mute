@@ -38,20 +38,23 @@
             <mat-header-cell mat-sort-header fxFlex="auto" *matHeaderCellDef>Name</mat-header-cell>
             <mat-cell class="title-cell" fxFlex="auto" fxFlex.lt-md="100%" fxLayoutAlign="start center" *matCellDef="let doc">
 
-              <!-- Document name -->
+              <!-- Document name when in the trash folder -->
               <div fxFlex class="doc-in-trash" *ngIf="folder === localStorage.trash; else docTitleButton">
                 <mat-icon class="title-icon">description</mat-icon>
                 {{doc.title}}
               </div>
 
+              <!-- Document name when in the local storage folder-->
               <ng-template #docTitleButton>
-                <button mat-button (click)="open(doc)" fxFlex fxLayoutAlign="start center">
+                <button mat-button (click)="open(doc)" fxFlex fxLayoutAlign="start left">
                   <mat-icon class="title-icon">description</mat-icon>
-                  <span>{{doc.title}}</span>
-                  <span class="key">{{doc.signalingKey}}</span>
+                  <span class="doc-title-signalingkey"> 
+                    <span class="doc-title">{{doc.title}}</span>
+                    <span class="doc-key"> - {{doc.signalingKey}}</span>
+                  </span>
+
                 </button>
               </ng-template>
-
               <!-- Document action buttons -->
               <div *ngIf="isMobile; else desktopActions">
                 <!-- <ng-container  fxHide [fxShow]="isActionsVisible(doc)"> -->

@@ -1,6 +1,6 @@
 export class muteConsts {
     //Size constants
-    public static documentNameMaxSize = 28;
+    public static documentNameMaxSize = 128;
     public static documentSignalingKeyMaxSize = 10;
 
     //Type of document constants

@@ -28,16 +28,29 @@
 
     .doc-in-trash {
       padding: 0 16px;
-    }
-
-    .key {
-      margin-left: 10px;
-      opacity: .2;
-      width: 90px;
-      word-wrap: none;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+
+    .doc-title-signalingkey {
+      display:inline-flex;
+      width:100%;
+    }
+    
+    .doc-title {
+      display:inline-block;
+      width:60%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .doc-key {
+      display:inline-block;
+      margin-left: 1px;
+      opacity: .2;
+      width: 40%;
     }
   }
 
