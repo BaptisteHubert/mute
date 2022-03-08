@@ -91,6 +91,10 @@ export class DocComponent implements OnDestroy {
     })
   }
 
+  getInfoMuteCoreCollab(): void{
+    this.docService.getInfoMuteCoreCollab()
+  }
+
   ngOnDestroy() {
     this.subs.forEach((s) => s.unsubscribe())
   }

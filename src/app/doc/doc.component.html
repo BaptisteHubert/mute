@@ -5,13 +5,13 @@
 
   <!-- Menu Sidenav-->
   <mat-sidenav mode="over" #menuSidenav class="menu-sidenav">
+    
     <mute-nav></mute-nav>
   </mat-sidenav>
 
   <!-- Content -->
   <mat-sidenav-content class="content">
     <mat-drawer-container class="content" hasBackdrop="false">
-
       <mat-drawer-content>
         <mute-editor [ngClass]="extrasmall" (isReady)="editorReady()"></mute-editor>
       </mat-drawer-content>
@@ -21,5 +21,5 @@
       </mat-drawer>
     </mat-drawer-container>
   </mat-sidenav-content>
-
 </mat-sidenav-container>
+<button (click)="getInfoMuteCoreCollab()">getInfoMuteCoreCollab</button>

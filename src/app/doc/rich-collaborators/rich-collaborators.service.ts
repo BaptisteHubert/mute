@@ -30,7 +30,7 @@ export class RichCollaboratorsService implements OnDestroy {
     this.updateSubject = new Subject()
     this.colors = new Colors()
     this.subs = []
-
+    
     let me = this.createMe(settings.profile)
     this.collaborators = [me]
     this.me = Promise.resolve()

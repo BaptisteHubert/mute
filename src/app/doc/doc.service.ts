@@ -30,6 +30,8 @@ import { DocResolverService } from './doc-resolver.service'
 import { LogsService } from './logs'
 import { NetworkService } from './network'
 import { RichCollaboratorsService } from './rich-collaborators'
+import { ISwimPG } from '@coast-team/mute-core/dist/types/src/collaborators/ICollaborator'
+import { element } from 'protractor'
 
 const SAVE_DOC_INTERVAL = 2000
 const SYNC_DOC_INTERVAL = 10000
@@ -139,6 +141,9 @@ export class DocService implements OnDestroy {
       },
     }
     this.muteCore = MuteCoreFactory.createMuteCore(muteCoreOptions)
+
+    //FIX - HUBERTBA - Logging mutecore informations
+
 
     this.initLogs()
 
@@ -253,6 +258,21 @@ export class DocService implements OnDestroy {
 
     // Start join the collaboration session
     this.network.join(this.doc.signalingKey)
+  }
+
+  //FIX - HUBERTBA - Function to list mutecore informations
+  getInfoMuteCoreCollab(): void{
+    const style = 'font-weight: bold;';
+    console.log("%c -----------------getInfoMuteCollab---------------------", style)
+    this.collabs.collaborators.forEach(element => 
+      console.log(" Id User : ", element.id,
+      "\n",
+      "DisplayName User : ",element.displayName,
+      "\n",
+      "DeviceID User : ",element.deviceID)
+    )
+    console.log("              My muteCoreId : ",this.muteCore.myMuteCoreId)
+    this.muteCore.getCollaboratorsService().collaboratorsServiceToString()
   }
 
   ngOnDestroy() {
