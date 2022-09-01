@@ -131,7 +131,6 @@
     "material-icons": "^0.5.3",
     "mute-structs": "^1.1.0",
     "nanoid": "^3.1.20",
-    "netflux": "^4.3.1",
     "ng-lint-staged": "^0.1.6",
     "np2-ui-auth": "harmanpa/ng2-ui-auth#aa965bc5a8982ab51a26deb4e15b04fde55cf8c9",
     "pm2": "^5.0.0",
@@ -157,5 +156,7 @@
       "postbump": "node scripts/update-app-data.js && prettier --write --list-different ngsw-config.json ; git add ngsw-config.json src/app-data.ts"
     }
   },
-  "dependencies": {}
+  "dependencies": {
+    "netflux": "file:netflux-0.0.0-development-HCERES-fix.tgz"
+  }
 }
