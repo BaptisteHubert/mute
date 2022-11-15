@@ -20,6 +20,14 @@ services:
     ports:
       - ${SIGVER_PORT:-8010}:8010
 
+  libp2p-signaling-server:
+    image: libp2p-webrtc-star-signaling-server
+    build:
+      context: .
+      dockerfile: DockerfileWebRTCStarSignalingServer
+    ports:
+      - 8015:8015
+
   pulsar:
     profiles:
       - pulsar
