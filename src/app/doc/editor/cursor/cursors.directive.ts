@@ -6,6 +6,7 @@ import { filter } from 'rxjs/operators'
 import { Streams, StreamsSubtype } from '@coast-team/mute-core'
 import { DocService } from '../../doc.service'
 import { NetworkService } from '../../network'
+import { NetworkServiceAbstracted } from '@app/doc/network/network.service.abstracted'
 import { RichCollaborator, RichCollaboratorsService } from '../../rich-collaborators'
 import { CollaboratorCursor } from './CollaboratorCursor'
 import * as proto from './cursor_proto'
@@ -29,7 +30,7 @@ export class CursorsDirective implements OnInit, OnDestroy {
   private protoAnchor: proto.Position
   private protoHead: proto.Position
 
-  constructor(private docService: DocService, private collabService: RichCollaboratorsService, private network: NetworkService) {
+  constructor(private docService: DocService, private collabService: RichCollaboratorsService, private network: NetworkServiceAbstracted) {
     this.protoCursor = proto.Cursor.create()
     this.protoAnchor = proto.Position.create()
     this.protoHead = proto.Position.create()

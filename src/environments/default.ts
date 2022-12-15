@@ -2,10 +2,13 @@ import { Strategy } from '@coast-team/mute-core'
 import { LogLevel } from 'netflux'
 
 import { EncryptionType } from '@app/core/crypto/EncryptionType.model'
+import { networkSolution } from '@app/doc/network/solutions/networkSolution'
 import { IEnvironment } from './IEnvironment.model'
 
 export const defaultEnvironment: IEnvironment = {
   production: false,
+
+  network:  networkSolution.NETFLUX, // Possibility to have multip^le networks at the same time down the line
 
   crdtStrategy: Strategy.LOGOOTSPLIT,
 

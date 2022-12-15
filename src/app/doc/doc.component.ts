@@ -8,7 +8,8 @@ import { UiService } from '../core/ui'
 import { RichCollaboratorsService } from '../doc/rich-collaborators'
 import { DocService } from './doc.service'
 import { LogsService } from './logs'
-import { NetworkService } from './network'
+import { NetworkService } from './network' 
+import { NetworkServiceAbstracted } from './network/network.service.abstracted'
 
 export enum VIEWPORT {
   LARGE,
@@ -21,7 +22,7 @@ export enum VIEWPORT {
   selector: 'mute-doc',
   templateUrl: './doc.component.html',
   styleUrls: ['./doc.component.scss'],
-  providers: [LogsService, DocService, NetworkService, RichCollaboratorsService],
+  providers: [LogsService, DocService, NetworkServiceAbstracted, RichCollaboratorsService],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 @Injectable()

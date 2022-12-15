@@ -1,7 +1,7 @@
 import { Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild } from '@angular/core'
 import { MatSnackBar } from '@angular/material/snack-bar'
 import { DomSanitizer } from '@angular/platform-browser'
-import { Subscription } from 'rxjs'
+import { Subject, Subscription } from 'rxjs'
 
 import { enableDebug } from '@coast-team/mute-crypto'
 import { LogLevel, setLogLevel } from 'netflux'
@@ -14,6 +14,7 @@ import { UiService } from '@app/core/ui'
 import { DocService } from '../doc.service'
 import { LogsService } from '../logs'
 import { NetworkService } from '../network'
+import { NetworkServiceAbstracted } from '../network/network.service.abstracted'
 
 @Component({
   selector: 'mute-toolbar',
@@ -37,6 +38,7 @@ export class ToolbarComponent implements OnDestroy {
   public cryptoLog: boolean
   public docLog: boolean
   public LogLevel = LogLevel
+  public isConnectedToNetwork: boolean
 
   private subs: Subscription[]
   private digest: string
@@ -44,11 +46,11 @@ export class ToolbarComponent implements OnDestroy {
   constructor(
     public docService: DocService,
     private sanitizer: DomSanitizer,
-    private network: NetworkService,
+    private network: NetworkServiceAbstracted,
     private botStorage: BotStorageService,
     private snackBar: MatSnackBar,
     private ui: UiService,
-    private logs: LogsService
+    private logs: LogsService,
   ) {
     this.debug = environment.debug.visible
     this.netfluxLog = environment.debug.log.netflux
@@ -64,6 +66,12 @@ export class ToolbarComponent implements OnDestroy {
     this.subs = []
     this.subs.push(botStorage.onStatus.subscribe((code) => (this.botNotAvailable = code !== BotStorageService.AVAILABLE)))
     this.subs.push(this.ui.docDigest.subscribe((digest) => (this.digest = digest)))
+
+    this.isConnectedToNetwork = false // When the toolbar is initialized, user isn't connected to the network
+    this.network.solution.connectionState.subscribe((state) => { //We listen to the connectionState of the solutions to know which button to show (join or leave the network)
+      this.isConnectedToNetwork = state
+    })
+    
   }
 
   ngOnDestroy(): void {
@@ -82,12 +90,21 @@ export class ToolbarComponent implements OnDestroy {
     }
   }
 
+  leaveNetwork(){
+    this.network.leaveNetwork()
+  }
+
+  rejoinNetwork(){
+    this.network.joinNetwork(this.network.documentKey)
+  }
+
+
   selectTitle() {
     this.input.nativeElement.select()
   }
 
   inviteBot() {
-    this.network.inviteBot(this.botStorage.wsURL)
+    //this.network.inviteBot(this.botStorage.wsURL)
   }
 
   updateNetfluxLog() {

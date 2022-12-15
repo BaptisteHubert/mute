@@ -2,6 +2,7 @@ import { IEnvironment } from './IEnvironment.model'
 import { defaultEnvironment } from './default'
 import { LogLevel } from 'netflux'
 import { EncryptionType } from '@app/core/crypto/EncryptionType.model'
+import { networkSolution } from '@app/doc/network/solutions/networkSolution'
 
 const host = 'localhost' // FIXME: interpolation at build time required
 
@@ -9,6 +10,8 @@ export const environment: IEnvironment = {
   ...defaultEnvironment, // we extend the default environment
 
   production: true,
+
+  network: networkSolution.NETFLUX,
 
   p2p: {
     // Signaling server URL
