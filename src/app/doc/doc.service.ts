@@ -17,7 +17,6 @@ import {
 } from '@coast-team/mute-core'
 import { SessionParameters } from '@coast-team/mute-core/dist/types/src/MuteCore'
 import { KeyState } from '@coast-team/mute-crypto'
-import { WebGroupState } from 'netflux'
 
 import { environment } from '@environments/environment'
 import { CryptoService } from '../core/crypto'
@@ -31,6 +30,7 @@ import { LogsService } from './logs'
 import { NetworkService } from './network'
 import { NetworkServiceAbstracted } from './network/network.service.abstracted'
 import { RichCollaboratorsService } from './rich-collaborators'
+import { EncryptionType } from '@app/core/crypto/EncryptionType.model'
 
 const SAVE_DOC_INTERVAL = 2000
 const SYNC_DOC_INTERVAL = 10000
@@ -173,9 +173,8 @@ export class DocService implements OnDestroy {
     })
 
     // Link message stream between Network and MuteCore
-    // TODO - rework messageIn and messageOut accordingly to the new network service
-    this.muteCore.messageIn$ = this.network.messageOut
-    this.network.setMessageIn(this.muteCore.messageOut$)
+    this.muteCore.messageIn$ = this.network.messageIn
+    this.network.setMessageOut(this.muteCore.messageOut$)
 
     //Set up the network to be used in the collaboratorService
     this.collabs.setNetwork(this.network)
@@ -237,13 +236,7 @@ export class DocService implements OnDestroy {
     this.startSaveDocInterval()
 
     // Subscribe to events which trigger document content synchronization
-
-    this.newSub = merge(
-      this.network.onCryptoStateChange.pipe(filter((state) => state === KeyState.READY)),
-      this.network.onGroupConnectionStatusChange.pipe(filter((state) => state === this.network.groupConnectionStatus["JOINED"]))
-    )
-      .pipe(auditTime(1000))
-      .subscribe((v) => this.restartSyncInterval())
+    this.handleSynchronizationActivation()
 
     // Config assymetric cryptography
     if (environment.cryptography.coniksClient) {
@@ -264,7 +257,25 @@ export class DocService implements OnDestroy {
   }
 
   /**
-   * 
+   * enable the MuteCore synchronization under specific conditions
+   */
+  handleSynchronizationActivation(){
+    if (environment.cryptography.type !== EncryptionType.NONE){
+      this.newSub = merge(
+        this.network.onCryptoStateChange.pipe(filter((state) => state === KeyState.READY)),
+        this.network.onGroupConnectionStatusChange.pipe(filter((state) => state === this.network.groupConnectionStatus["JOINED"]))
+      )
+        .pipe(auditTime(1000))
+        .subscribe((v) => this.restartSyncInterval())
+    } else {
+      setInterval(() => {
+        this.restartSyncInterval()
+      }, 1000);
+    }
+  }
+
+  /**
+   * Retreive the networkId of the member that joined the network
    */
   handleCollaboratorJoining(){
     const self = this
@@ -422,8 +433,12 @@ export class DocService implements OnDestroy {
   }
 
   private sync() {
-    if (this.network.cryptoState === KeyState.READY) {
-      // if (this.network.members.length > 1 && this.network.cryptoState === KeyState.READY) {
+    if (environment.cryptography.type !== EncryptionType.NONE){
+      if (this.network.cryptoState === KeyState.READY) {
+        // if (this.network.members.length > 1 && this.network.cryptoState === KeyState.READY) {
+          this.muteCore.synchronize()
+      }
+    } else {
       this.muteCore.synchronize()
     }
   }

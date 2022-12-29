@@ -1,33 +1,29 @@
 /* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/member-ordering */
-import { ComponentFactoryResolver, NgZone } from "@angular/core";
+import { NgZone } from "@angular/core";
 import { CryptoService } from "@app/core/crypto";
 import { EncryptionType } from "@app/core/crypto/EncryptionType.model";
-import { Doc } from "@app/core/Doc";
 import { environment } from "@environments/environment";
 import { WebGroup, WebGroupState } from "netflux";
 import { BehaviorSubject, Subject } from "rxjs";
 import { Message } from "../message_proto";
 import { INetworkSolutionService } from "./network.solution.service"
-import { StreamId, Streams, Streams as MuteCoreStreams } from '@coast-team/mute-core'
+import { StreamId, Streams, Streams as MuteCoreStreams, StreamsSubtype } from '@coast-team/mute-core'
+import { KeyAgreementBD, KeyState, Streams as MuteCryptoStreams, Symmetric } from '@coast-team/mute-crypto'
 import { ActivatedRoute } from "@angular/router";
-import { Symmetric } from "@coast-team/mute-crypto";
-import { filter } from "rxjs/operators";
+import { NetworkSolutionServiceFunctions } from "./network.solution.services.functions";
 
-export class NetfluxService implements INetworkSolutionService{
+export class NetfluxService extends NetworkSolutionServiceFunctions implements INetworkSolutionService{
 
-    public myNetworkId: number;
-
-    public neighbors: [number];
-
+    public myNetworkId: Subject<number>
+    public peers : number[]
+    public neighbors: number[];
+    public connectionState: Subject<boolean>
     public wg: WebGroup
 
-    public connectionState: Subject<boolean>
-
-    
     constructor(
       private messageReceived: Subject<{ streamId: StreamId; content: Uint8Array; senderNetworkId: number }>,
-      private connectionGroupStatusSubject: BehaviorSubject<number>,
+      private groupConnectionStatusSubject: BehaviorSubject<number>,
       private serverConnectionStatusSubject: BehaviorSubject<number>,
       private memberJoinSubject : Subject<number>,
       private memberLeaveSubject : Subject<number>,
@@ -35,7 +31,10 @@ export class NetfluxService implements INetworkSolutionService{
       private cryptoService: CryptoService,
       private route: ActivatedRoute
        ){
+        super()
         console.log("USING NETFLUX")
+        this.myNetworkId = new Subject
+        this.peers = []
         this.connectionState = new Subject
         this.connectionState.next(false)
         this.zone.runOutsideAngular(() => {
@@ -45,9 +44,8 @@ export class NetfluxService implements INetworkSolutionService{
             })
             window.wg = this.wg
             this.wg.onSignalingStateChange = (state) => this.serverConnectionStatusSubject.next(state)
-            this.configureEncryption(environment.cryptography.type)
+            this.configureNetworkBehavior()
         })
-        
         this.cryptoService = cryptoService
         this.messageReceived = messageReceived
     }
@@ -70,18 +68,10 @@ export class NetfluxService implements INetworkSolutionService{
       return true
     }
 
-    //Sending data
-    send (streamId: StreamId, content: Uint8Array, id?: number): void {
-      if (this.members.length > 1) {
-        const msg = Message.create({ type: streamId.type, subtype: streamId.subtype, content })
-        if (id === undefined) {
-          this.wg.send(Message.encode(msg).finish())
-        } else {
-          id = id === 0 ? this.randomMember() : id
-          this.wg.sendTo(id, Message.encode(msg).finish())
-        }
-      }
+    send (streamId: StreamId, content: Uint8Array, peers : [number], id?: number): void {
+      super.send(streamId, content, peers, id)
     }
+
 
     sendToAll(message : Uint8Array){
         this.wg.send(message)
@@ -105,140 +95,30 @@ export class NetfluxService implements INetworkSolutionService{
       return this.wg.members
     }
 
-    // Handle encryption
-    configureEncryption (type: EncryptionType) {
-      switch (type) {
-        case EncryptionType.KEY_AGREEMENT_BD:
-          this.configureKeyAgreementBDEncryption()
-          break
-        case EncryptionType.METADATA:
-          this.configureMetaDataEncryption()
-          break
-        case EncryptionType.NONE:
-          this.configureNoEncryption()
-          break
-        default:
-          log.error('Unknown Encryption type: ', type)
+    // Handling how message are sent, received, members join
+    configureNetworkBehavior(){
+      this.cryptoService.handleCryptographyProcess(this.route, this, this.memberJoinSubject, this.memberLeaveSubject)
+      this.wg.onMemberJoin = (networkId) => {
+        this.peers.push(networkId)
+        this.memberJoinSubject.next(networkId)
       }
-    }
-    
-    configureMetaDataEncryption() { 
-        this.route.data.subscribe(({ doc }: { doc: Doc }) => {
-        doc.onMetadataChanges
-          .pipe(
-            filter(({ isLocal, changedProperties }) => {
-              return !isLocal && changedProperties.includes(Doc.CRYPTO_KEY)
-            })
-          )
-          .subscribe(() => {
-            ;(this.cryptoService.crypto as Symmetric).importKey(doc.cryptoKey)
-          })
-        })
-      
-        this.wg.onMemberJoin = (networkId) => {
-          this.memberJoinSubject.next(networkId)
-        } 
-        this.wg.onMemberLeave = (networkId) => {
-          this.memberLeaveSubject.next(networkId)
-        }
-        this.wg.onStateChange = (state: WebGroupState) => {
-          const stateNumber = parseInt(state.toString(), 10) 
-          this.connectionGroupStatusSubject.next(stateNumber)
-          if (stateNumber === 1){
-            this.connectionState.next(true)
-          } else {
-            this.connectionState.next(false)
-          }
-        } 
-        this.wg.onMessage = (networkId, bytes: Uint8Array) => {
-          try {
-            const { type, subtype, content } = Message.decode(bytes)
-            if (type === MuteCoreStreams.DOCUMENT_CONTENT) {
-              this.cryptoService.crypto
-                .decrypt(content)
-                .then((decryptedContent) => {
-                  this.messageReceived.next({ streamId: { type, subtype }, content: decryptedContent, senderNetworkId: networkId })
-                })
-                .catch((err) => {})
-              return
-            }
-            this.messageReceived.next({ streamId: { type, subtype }, content, senderNetworkId: networkId })
+      this.wg.onMemberLeave = (networkId) => {
+        const indexPeer = this.peers.findIndex((p) => p === networkId)
+        this.peers.splice(indexPeer, 1)
+        this.memberLeaveSubject.next(networkId)
+      }
+      this.wg.onMyId = (id) => {
+        this.myNetworkId.next(id)
+      }
+      this.wg.onStateChange = (state: WebGroupState) => {
+        this.handleStateConnection(state, this.groupConnectionStatusSubject, this.connectionState)
+      } 
+      this.wg.onMessage = (networkId, bytes: Uint8Array) => {
+        try { 
+          this.handleIncomingMessage( bytes, this.messageReceived, networkId, this.cryptoService)
           } catch (err) {
-            log.warn('Message from network decode error: ', err.message)
-          }
-        }
-        
-      }
-
-      configureKeyAgreementBDEncryption() {
-        console.log("KeyAgreementBDEncryption")
-        /*
-        const bd = this.cryptoService.crypto as KeyAgreementBD
-        if (environment.cryptography.coniksClient || environment.cryptography.keyserver) {
-          bd.signingKey = this.cryptoService.signingKeyPair.privateKey
-          this.cryptoService.onSignatureError = (id) => log.error('Signature verification error for ', id)
-        }
-        bd.onSend = (msg, streamId) => this.send({ type: streamId, subtype: StreamsSubtype.CRYPTO }, msg)
-        // Handle network events
-        this.wg.onMyId = (myId) => bd.setMyId(myId)
-        this.wg.onMemberJoin = (networkId) => {
-          bd.addMember(networkId)
-          this.memberJoinSubject.next(networkId)
-        }
-        this.wg.onMemberLeave = (networkId) => {
-          bd.removeMember(networkId)
-          this.memberLeaveSubject.next(networkId)
-        }
-        this.wg.onStateChange = (state: WebGroupState) => {
-          if (state === WebGroupState.JOINED) {
-            bd.setReady()
-          }
-          this.stateSubject.next(state)
-        }
-        this.wg.onMessage = (networkId, bytes: Uint8Array) => {
-          try {
-            const { type, subtype, content } = Message.decode(bytes)
-            if (type === MuteCryptoStreams.KEY_AGREEMENT_BD) {
-              this.cryptoService.onBDMessage(networkId, content)
-            } else {
-              if (type === MuteCoreStreams.DOCUMENT_CONTENT) {
-                this.cryptoService.crypto
-                  .decrypt(content)
-                  .then((decryptedContent) => {
-                    this.messageSubject.next({ streamId: { type, subtype }, content: decryptedContent, senderNetworkId: networkId })
-                  })
-                  .catch((err) => {})
-                return
-              }
-              this.messageSubject.next({ streamId: { type, subtype }, content, senderNetworkId: networkId })
-            }
-          } catch (err) {
-            log.warn('Message from network decode error: ', err.message)
-          }
-        }*/
-      }
-    
-      /**
-       * Using this mode, no encryption is done on the data.
-       * You also can't receive modification you weren't there to see on a document
-       */
-      configureNoEncryption() {
-        console.log("NoEncryption")
-        // Handle network events
-        this.wg.onMemberJoin = (networkId) => this.memberJoinSubject.next(networkId)
-        this.wg.onMemberLeave = (networkId) => this.memberLeaveSubject.next(networkId)
-        this.wg.onStateChange = (state: WebGroupState) => {
-          const stateNumber = parseInt(state.toString(), 10) 
-          this.connectionGroupStatusSubject.next(stateNumber)
-        } 
-        this.wg.onMessage = (networkId, bytes: Uint8Array) => {
-          try {
-            const { type, subtype, content } = Message.decode(bytes)
-            this.messageReceived.next({ streamId: { type, subtype }, content, senderNetworkId: networkId })
-          } catch (err) {
-            log.warn('Message from network decode error: ', err.message)
-          }
+          log.warn('Message from network decode error: ', err.message)
         }
       }
-
+    } 
 }

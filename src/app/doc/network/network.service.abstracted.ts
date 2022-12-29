@@ -22,8 +22,6 @@ export class NetworkServiceAbstracted implements OnDestroy {
 
     public server : Server
     public groupOfCollaborators : [RichCollaborator]
-    public dataSendingChannel : RTCDataChannel | undefined
-    public dataReceivingChannel : RTCDataChannel | undefined
 
     public useGroup : boolean
     public useServer : boolean
@@ -44,7 +42,6 @@ export class NetworkServiceAbstracted implements OnDestroy {
     // Connection state to the group of peers subject
     private serverConnectionStatusSubject: BehaviorSubject<number>
     public serverConnectionStatus : Enum
-
 
     // My network identifier
     public myNetworkId : number
@@ -84,11 +81,13 @@ export class NetworkServiceAbstracted implements OnDestroy {
         this.prepareNetworkLayer(zone, route, cryptoService)
     }
 
+
+    // ------- Prepare Enum, and the network layer
     prepareNetworkLayer(zone: NgZone, route: ActivatedRoute, cryptoService: CryptoService){
       this.solution = new NetfluxService(this.messageSubject, this.groupConnectionStatusSubject, this.serverConnectionStatusSubject, this.memberJoinSubject, this.memberLeaveSubject, zone, cryptoService, route)
-        
       this.useGroup = this.solution.useGroup()
       this.useServer = this.solution.useServer()
+      this.retrieveNetworkId()
     }
     
 
@@ -131,6 +130,7 @@ export class NetworkServiceAbstracted implements OnDestroy {
       this.groupOfCollaborators.splice(rcIndex, 1)
     }
 
+    // -------- Subjects getters related to server connectivy, members leaving, joining ------
     get onGroupConnectionStatusChange (): Observable<number> {
       return this.groupConnectionStatusSubject.asObservable()
     }
@@ -162,20 +162,28 @@ export class NetworkServiceAbstracted implements OnDestroy {
 
 
     // ---------------Sending Data -------------------------------
-
-    get messageOut (): Observable<{ streamId: StreamId; content: Uint8Array; senderNetworkId: number }> {
+    get messageIn (): Observable<{ streamId: StreamId; content: Uint8Array; senderNetworkId: number }> {
       return this.messageSubject.asObservable()
     }
 
-    setMessageIn (source: Observable<{ streamId: StreamId; content: Uint8Array; recipientNetworkId?: number }>) {
+    retrieveNetworkId(){
+      this.solution.myNetworkId.subscribe((myNetworkId) => {
+        this.myNetworkId = myNetworkId
+      })
+    }
+
+    /**
+     * 
+     * @param source 
+     */
+    setMessageOut(source: Observable<{ streamId: StreamId; content: Uint8Array; recipientNetworkId?: number }>) {
       this.subs[this.subs.length] = source.subscribe(({ streamId, content, recipientNetworkId }) => {
         if (streamId.type === MuteCoreStreams.DOCUMENT_CONTENT && environment.cryptography.type !== EncryptionType.NONE) {
-          this.cryptoService.crypto
-            .encrypt(content)
-            .then((encryptedContent) => {
+          if (this.cryptoService.crypto.state === KeyState.READY){
+            this.cryptoService.crypto.encrypt(content).then((encryptedContent) => {
               this.send(streamId, encryptedContent, recipientNetworkId)
             })
-            .catch((err) => {})
+          }
         } else {
           this.send(streamId, content, recipientNetworkId)
         }
@@ -207,8 +215,10 @@ export class NetworkServiceAbstracted implements OnDestroy {
       this.messageSubject.complete()
       this.memberJoinSubject.complete()
       this.memberLeaveSubject.complete()
+      this.groupConnectionStatusSubject.complete()
+      this.serverConnectionStatusSubject.complete() 
+      this.solution.myNetworkId.complete()
+      this.solution.connectionState.complete()
       this.solution.leaveNetwork()
     }
 }
-
-

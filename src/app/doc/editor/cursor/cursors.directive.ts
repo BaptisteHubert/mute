@@ -94,7 +94,7 @@ export class CursorsDirective implements OnInit, OnDestroy {
     this.listenEventsForCursorChange()
 
     // On message from the network
-    this.subs[this.subs.length] = this.network.messageOut
+    this.subs[this.subs.length] = this.network.messageIn
       .pipe(filter(({ streamId }) => streamId.type === Streams.CURSOR))
       .subscribe(({ senderNetworkId, content }) => {
         try {

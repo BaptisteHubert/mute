@@ -1,5 +1,16 @@
 # **Replacing the network layer of mute**
 
+## **Table of Content**
+
+1. [Mapping table between Mute and Mute-Core](#1-mapping-table-between-mute-and-mute-core)
+2. [Abstraction of the networkService class](#2-abstraction-of-the-networkservicets-class)
+   1. [Requirements](#21-study-of-the-requirements-for-the-network-to-be-abstracted)
+   2. [Current link between Mute and netflux](#22-what-is-happening-right-now-in-mute-with-netflux)
+   3. [Implementing Pulsar](#24-implement-pulsar)
+3. [Swim Integration](#3-finalize-swim-integration-to-have-the-collaborators-listing-handled-in-mute-core)
+4. [Additional work](#4-additional-work)
+5. [TO-DO List](#5-to-do-list)
+
 ## **Curent network layer of MUTE**
 
 For the network layer of MUTE, we are using software developed by the COAST Team.
@@ -280,11 +291,24 @@ Netflux is a package that proposes a lot of features. For example, it handles th
 The solution for this is to delegate the collaborator leaving / joining / idling in the `mute-core` package. This way, we won't be dependent on the features of the P2P solutions. 
 To delegate this task, we will be using the SWIM *(Scalable Weakly Consistent Infection-style Process Group Membership)* protocol.
 
-### State of the current SWIM integration
+### 3.1 State of the current SWIM integration
 
 There is already an implementation done in the `mute-core` code. But it needs some fixes.
 
-## TO-DO list
+## 4. Additional Work
+This paragraph will explain work done for the TO-DO list below
+**Move the cryptography functions away from the network services**
+Light refactoring was made to ensure that the cryptography process wouldn't need to be redefined every time a network solutioon was added.
+The cryptography process related to the current environment is mostly defined in the `handleCryptographyProcess` function, back in the `cryptoService` class.
+A new class was created, where generic function used across the solutions are defined. This class is called `networkSolutionServiceFunctions`.
+Additionnaly, some light refactoring was done to make the code more easier to understand. Comments were also added.
+
+
+**Text added by other peers while offline wasn't retreived when joining the network again**
+The problem originates from the way the `restartSyncInterval()` function would be called in any encryption type used. This function calls the function `sync` at a regular interval. This function will then call, under a specific condition, the `muteCore.synchronize()` function *(the function that handles the retreiving of added data while offline)*. This condition was that the `cryptoState` was valued at `ready`. Only, this variable could never be ready in an environement where no encryption was used.
+The sync function was modified to account for the `cryptoState` value but only in an encrypted environment. Otherwise, synchronization will happen.
+
+## 5. TO-DO list
 
 What is left to do ?
 
@@ -293,9 +317,10 @@ What is left to do ?
   - [x] Netflux
   - [ ] Libp2p
   - [ ] Pulsar
-- [ ] Move the cryptography functions away from the network services
+- [x] Move the cryptography functions away from the network services
 - [ ] Move the logic behind handling peers connectivity in MUTE-CORE (using SWIM)
 - [ ] Use multiple network solutions at once
 - Fix various bugs
   - [ ] Incorrect profile picture is shown when hovering peers connected.
   - [ ] Digest is empty when joining a document (even if the document is not empty)
+  - [x] Text added by other peers while offline wasn't retrieved when joining the network again

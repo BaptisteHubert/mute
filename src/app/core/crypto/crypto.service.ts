@@ -14,6 +14,11 @@ import { EncryptionType } from './EncryptionType.model'
 import { PKRequest } from './PKRequest'
 import { PKRequestConiks } from './PKRequestConiks'
 
+import { StreamId, Streams as MuteCoreStreams, StreamsSubtype } from '@coast-team/mute-core'
+import { ActivatedRoute } from '@angular/router'
+import { Doc } from '../Doc'
+import { INetworkSolutionService } from '@app/doc/network/solutions/network.solution.service'
+
 export interface IKeyPair {
   publicKey: string
   privateKey: string
@@ -33,16 +38,11 @@ export class CryptoService implements OnDestroy {
   private subs: Subscription[]
   private signatureErrorHandler: (id: number) => void
 
-  static async generateKey(): Promise<string> {
-    return MuteCrypto.generateKey()
-  }
-
   constructor(http: HttpClient, settings: SettingsService) {
     this.stateSubject = new Subject()
     this.subs = []
     this.signatureErrorHandler = () => {}
     this.members = new Map()
-
     switch (environment.cryptography.type) {
       case EncryptionType.METADATA:
         this.crypto = new Symmetric()
@@ -74,16 +74,24 @@ export class CryptoService implements OnDestroy {
     this.crypto.onStateChange = (state) => this.stateSubject.next(state)
   }
 
-  ngOnDestroy() {
-    this.subs.forEach((s) => s.unsubscribe())
-  }
-
   get state(): KeyState {
     return this.crypto.state
   }
 
   get onStateChange(): Observable<KeyState> {
     return this.stateSubject.asObservable()
+  }
+
+  set onSignatureError(handler: (id: number) => void) {
+    this.signatureErrorHandler = handler
+  }
+
+  static async generateKey(): Promise<string> {
+    return MuteCrypto.generateKey()
+  } 
+
+  ngOnDestroy() {
+    this.subs.forEach((s) => s.unsubscribe())
   }
 
   async encrypt(msg: Uint8Array): Promise<Uint8Array> {
@@ -93,6 +101,48 @@ export class CryptoService implements OnDestroy {
   async decrypt(ciphertext: Uint8Array): Promise<Uint8Array> {
     return this.crypto.decrypt(ciphertext)
   }
+
+  /**
+   * Function that handle the process related to the current cryptography option chosen in the environment
+   * @param route The current route
+   * @param networkSolutionService The networkSolutionService used at the moment
+   * @param memberJoinSubject Observable of users joining the network
+   * @param memberLeaveSubject Observable of users leaving the network
+   */
+   handleCryptographyProcess(route : ActivatedRoute, networkSolutionService : INetworkSolutionService, memberJoinSubject : Subject<number>, memberLeaveSubject : Subject<number>){
+    switch (environment.cryptography.type){
+      case EncryptionType.KEY_AGREEMENT_BD :
+        const bd = this.crypto as KeyAgreementBD
+        networkSolutionService.myNetworkId.subscribe((myNetworkId) => {
+          bd.setMyId(myNetworkId)
+        })
+        if (environment.cryptography.coniksClient || environment.cryptography.keyserver) {
+          bd.signingKey = this.signingKeyPair.privateKey
+          this.onSignatureError = (id) => log.error('Signature verification error for ', id)
+        }
+        bd.onSend = (msg, streamId) => networkSolutionService.send({ type: streamId, subtype: StreamsSubtype.CRYPTO }, msg, networkSolutionService.peers)
+        memberJoinSubject.subscribe((networkId) => {
+          bd.addMember(networkId)
+        })
+        memberLeaveSubject.subscribe((networkId) => {
+          bd.removeMember(networkId)
+        })
+        networkSolutionService.connectionState.subscribe((state) => {
+          if (state === true){
+            bd.setReady()  
+          }
+        })
+      break
+      case EncryptionType.METADATA :
+        route.data.subscribe(({ doc }: { doc: Doc }) => {
+          doc.onMetadataChanges.pipe(filter(({ isLocal, changedProperties }) => !isLocal && changedProperties.includes(Doc.CRYPTO_KEY)))
+            .subscribe(() => {
+              ;(this.crypto as Symmetric).importKey(doc.cryptoKey)
+            })
+        })
+      break  
+    }
+}
 
   async checkMySigningKeyPairConiks(profile: Profile) {
     if (!environment.cryptography?.coniksClient) {
@@ -179,10 +229,6 @@ export class CryptoService implements OnDestroy {
     } else {
       this.members.set(id, { key: cryptoKey, buffer: [] })
     }
-  }
-
-  set onSignatureError(handler: (id: number) => void) {
-    this.signatureErrorHandler = handler
   }
 
   onBDMessage(id: number, content: Uint8Array) {
