@@ -8,7 +8,7 @@ import { IEnvironment } from './IEnvironment.model'
 export const defaultEnvironment: IEnvironment = {
   production: false,
 
-  network:  networkSolution.NETFLUX, // Possibility to have multip^le networks at the same time down the line
+  network:  networkSolution.LIBP2P, // Possibility to have multip^le networks at the same time down the line
 
   crdtStrategy: Strategy.LOGOOTSPLIT,
 
@@ -33,6 +33,7 @@ export const defaultEnvironment: IEnvironment = {
       ],
     },
     signalingServer: 'ws://localhost:8010', // sigver, run automatically on local development ;-)
+    libp2pAddr : '/ip4/127.0.0.1/tcp/8011/wss/p2p-webrtc-star/',
   },
 
   cryptography: {

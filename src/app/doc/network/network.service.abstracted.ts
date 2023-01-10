@@ -16,6 +16,8 @@ import { CryptoService } from "@app/core/crypto";
 import { environment } from '@environments/environment'
 import { Enum } from "protobufjs";
 import { ActivatedRoute } from "@angular/router";
+import { networkSolution } from "./solutions/networkSolution";
+import { Libp2pService } from "./solutions/libp2p.service";
 
 @Injectable()
 export class NetworkServiceAbstracted implements OnDestroy {
@@ -84,7 +86,18 @@ export class NetworkServiceAbstracted implements OnDestroy {
 
     // ------- Prepare Enum, and the network layer
     prepareNetworkLayer(zone: NgZone, route: ActivatedRoute, cryptoService: CryptoService){
-      this.solution = new NetfluxService(this.messageSubject, this.groupConnectionStatusSubject, this.serverConnectionStatusSubject, this.memberJoinSubject, this.memberLeaveSubject, zone, cryptoService, route)
+      switch (environment.network){
+        case networkSolution.NETFLUX :
+          this.solution = new NetfluxService(this.messageSubject, this.groupConnectionStatusSubject, this.serverConnectionStatusSubject, this.memberJoinSubject, this.memberLeaveSubject, zone, cryptoService, route)
+          break;
+        case networkSolution.LIBP2P:
+          this.solution = new Libp2pService(this.messageSubject, this.groupConnectionStatusSubject, this.serverConnectionStatusSubject, this.memberJoinSubject, this.memberLeaveSubject, zone, cryptoService, route)
+          break;
+          break
+        default :
+          console.log("Current network is not recognized") 
+          break
+      }
       this.useGroup = this.solution.useGroup()
       this.useServer = this.solution.useServer()
       this.retrieveNetworkId()

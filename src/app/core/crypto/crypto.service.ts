@@ -61,7 +61,6 @@ export class CryptoService implements OnDestroy {
           },
         } as any
     }
-
     if (environment.cryptography.coniksClient) {
       this.pkRequestConiks = new PKRequestConiks(http)
     } else if (environment.cryptography.keyserver) {
@@ -71,7 +70,9 @@ export class CryptoService implements OnDestroy {
     this.subs[this.subs.length] = settings.onChange.pipe(filter((props) => props.includes(EProperties.profile))).subscribe(() => {
       this.login = ''
     })
-    this.crypto.onStateChange = (state) => this.stateSubject.next(state)
+    this.crypto.onStateChange = (state) => {
+      this.stateSubject.next(state)
+    } 
   }
 
   get state(): KeyState {
@@ -120,7 +121,9 @@ export class CryptoService implements OnDestroy {
           bd.signingKey = this.signingKeyPair.privateKey
           this.onSignatureError = (id) => log.error('Signature verification error for ', id)
         }
-        bd.onSend = (msg, streamId) => networkSolutionService.send({ type: streamId, subtype: StreamsSubtype.CRYPTO }, msg, networkSolutionService.peers)
+        bd.onSend = (msg, streamId) => {
+          networkSolutionService.send({ type: streamId, subtype: StreamsSubtype.CRYPTO }, msg, networkSolutionService.peers)
+        } 
         memberJoinSubject.subscribe((networkId) => {
           bd.addMember(networkId)
         })
@@ -129,7 +132,7 @@ export class CryptoService implements OnDestroy {
         })
         networkSolutionService.connectionState.subscribe((state) => {
           if (state === true){
-            bd.setReady()  
+            bd.setReady()
           }
         })
       break

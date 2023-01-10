@@ -66,9 +66,9 @@ export class NetfluxService extends NetworkSolutionServiceFunctions implements I
 
     useServer(){
       return true
-    }
+    } 
 
-    send (streamId: StreamId, content: Uint8Array, peers : [number], id?: number): void {
+    send (streamId: StreamId, content: Uint8Array, peers : number[], id?: number): void {
       super.send(streamId, content, peers, id)
     }
 
@@ -78,16 +78,12 @@ export class NetfluxService extends NetworkSolutionServiceFunctions implements I
     }
 
     sendRandom(message : Uint8Array){
-        this.wg.sendTo(this.randomMember(), message)
+        const idPeer =  this.randomPeer(this.peers)
+        this.wg.sendTo(idPeer, message)
     }
 
     sendTo(recipientNetworkId: number, message : Uint8Array){
         this.wg.sendTo(recipientNetworkId, message)
-    }
-
-    private randomMember(): number {
-      const otherMembers = this.members.filter((i) => i !== this.wg.myId)
-      return otherMembers[Math.ceil(Math.random() * otherMembers.length) - 1]
     }
 
     //getters, setters

@@ -11,6 +11,7 @@ export class NetworkSolutionServiceFunctions {
 
     //Sending data
     send (streamId: StreamId, content: Uint8Array, peers : number[], id?: number): void {
+        
         if (peers.length >= 1){
             const msg = Message.create({ type: streamId.type, subtype: streamId.subtype, content })
             if (id === undefined) {
@@ -43,7 +44,7 @@ export class NetworkSolutionServiceFunctions {
     handleIncomingMessage(bytes : Uint8Array,
          messageReceived: Subject<{ streamId: StreamId; content: Uint8Array; senderNetworkId: number }>,
          networkId : number,
-         cryptoService : CryptoService) : void{
+         cryptoService : CryptoService) : void{   
         const { type, subtype, content} =  Message.decode(bytes)
         if (type === MuteCryptoStreams.KEY_AGREEMENT_BD) {
             cryptoService.onBDMessage(networkId, content)
@@ -64,13 +65,17 @@ export class NetworkSolutionServiceFunctions {
      * @param connectionState The connection state to the network (used mostly in the toolbar component to show the button to join or leave the network)
      */
     handleStateConnection(state: number, groupConnectionStatusSubject : Subject<number>, connectionState : Subject<boolean>) : void{
-        const stateNumber = parseInt(state.toString(), 10) 
+        const stateNumber =  parseInt(state.toString(), 10) 
         groupConnectionStatusSubject.next(stateNumber)
         if (stateNumber === 1){
           connectionState.next(true)
         } else {
           connectionState.next(false)
         }    
+    }
+
+    randomPeer(peers : number[]): number {
+        return peers[Math.ceil(Math.random() * peers.length) - 1]
     }
 
 }

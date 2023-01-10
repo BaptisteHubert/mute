@@ -1,5 +1,6 @@
 import { EncryptionType } from "@app/core/crypto/EncryptionType.model";
 import { StreamId } from "@coast-team/mute-core";
+import { Libp2p } from "libp2p/dist/src";
 import { Subject } from "rxjs/internal/Subject";
 
 // This interface represents a generic class that should handle the network functions of the mute project 
@@ -29,5 +30,5 @@ export interface INetworkSolutionService {
 
     useServer : () => boolean
 
-    configureNetworkBehavior : () => void
+    configureNetworkBehavior : (libp2pInstance? :Libp2p) => void
 }

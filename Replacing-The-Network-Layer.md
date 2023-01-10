@@ -6,7 +6,9 @@
 2. [Abstraction of the networkService class](#2-abstraction-of-the-networkservicets-class)
    1. [Requirements](#21-study-of-the-requirements-for-the-network-to-be-abstracted)
    2. [Current link between Mute and netflux](#22-what-is-happening-right-now-in-mute-with-netflux)
-   3. [Implementing Pulsar](#24-implement-pulsar)
+   3. [Implement Netflux](#23-modification-of-the-current-netflux-integration-in-the-code)
+   4. [Implement Libp2p](#24-implement-libp2p)
+   5. [Implement Pulsar](#25-implement-pulsar)
 3. [Swim Integration](#3-finalize-swim-integration-to-have-the-collaborators-listing-handled-in-mute-core)
 4. [Additional work](#4-additional-work)
 5. [TO-DO List](#5-to-do-list)
@@ -236,6 +238,7 @@ The first step in the removal of the *hard-coded* link to netflux in the mute co
 To adapt the different solutions that we might use in the future, an interface has been used : `network.solution.service`
 This interface lists what is the key features of the solution we will be using. Sending data, joining a network...
 Then, the solution we use are adapted to fit the functions and the variables defined in the interface aforementioned.
+There is also a class that was created : `network.solution.services.functions` that holds generic functions 
 
 **Adding function**
 One interesting function that was thought over was the ability to leave the network by user-action. Before, for testing purpose, we were cutting the signaling server down to test the behavior of the app when offline. Now, there is an added button in the details section where you can leave/join depending on the state of your current connection.
@@ -259,7 +262,9 @@ Files to modify to account for the libp2p signaling server
 
 However, there is not a complex link to sigver in mute. Apart, from a `npm run sigver` in a prestart script in the `package.json` file, removing sigver from the code is quite easy.
 
-##### Using the libp2p signaling server
+### 2.4. Implement libp2p
+
+#### Using the libp2p signaling server
 
 However, it seems that the `@libp2p/webrtc-star-signalling-server@` package can't be used with pm2, with this error showing :
 
@@ -276,6 +281,12 @@ This error is coming from the fact that the libp2p-webrtc-star-signaling-server 
 We fixed this error by referencing the index.js cited in the error message in the process declaration for pm2
 (`/usr/local/lib/node_modules/@libp2p/webrtc-star-signalling-server/bin/index.js` instead of using `webrtc-star` directly)
 
+#### Difficulty to work with a PeerID
+The peerID being a string, and the networkId being typed as a number in the whole mute project represents a problem as we can't use the peerID (it won't work with the Key Agreement Protocol for the encryption parameter of mute)
+To work around this, we are using a map that associates a peerId to its value in a number (for loop on the peerId and using the `charCodeAt()` function) 
+This way, we can have a number version of the peerID that can be used in the mute project. The original string peerID is mostly used for the dialing part (when we create the multiAddr to dial).
+
+### 2.5. Implement pulsar
 
 To prove that the network service has been succesfully abstracted, we should implement pulsar as another solution. Being able to use it by only setting it up in the environment variable would be interesting. It would also serves as a good way of dceoupling pulsar from the code and keep it all tidy in one place.
 #### **MUTE-CORE**
@@ -315,11 +326,10 @@ What is left to do ?
 - [x] Creating an interface for the networks solutions
 - Implementing network solutions
   - [x] Netflux
-  - [ ] Libp2p
+  - [x] Libp2p
   - [ ] Pulsar
 - [x] Move the cryptography functions away from the network services
 - [ ] Move the logic behind handling peers connectivity in MUTE-CORE (using SWIM)
-- [ ] Use multiple network solutions at once
 - Fix various bugs
   - [ ] Incorrect profile picture is shown when hovering peers connected.
   - [ ] Digest is empty when joining a document (even if the document is not empty)

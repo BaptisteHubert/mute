@@ -436,7 +436,7 @@ export class DocService implements OnDestroy {
     if (environment.cryptography.type !== EncryptionType.NONE){
       if (this.network.cryptoState === KeyState.READY) {
         // if (this.network.members.length > 1 && this.network.cryptoState === KeyState.READY) {
-          this.muteCore.synchronize()
+        this.muteCore.synchronize()
       }
     } else {
       this.muteCore.synchronize()

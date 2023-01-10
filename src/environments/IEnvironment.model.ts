@@ -25,10 +25,14 @@ export interface IEnvironment {
      */
     signalingServer: string
 
+    libp2pAddr?: string
+    
+
     /**
      * Parameters for the connection to the signaling server
      */
     rtcConfiguration?: RTCConfiguration
+    
   }
 
   cryptography: {
