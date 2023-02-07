@@ -33,11 +33,14 @@ export const defaultEnvironment: IEnvironment = {
       ],
     },
     signalingServer: 'ws://localhost:8010', // sigver, run automatically on local development ;-)
-    libp2pAddr : '/ip4/127.0.0.1/tcp/8011/wss/p2p-webrtc-star/',
+
+
+    libp2pAddr: '/ip4/127.0.0.1/tcp/8011/wss/p2p-webrtc-star/',
+    //libp2pAddr : '/dns4/mutehost.loria.fr/tcp/8004/wss/p2p-webrtc-star/' - Prod address
   },
 
   cryptography: {
-    type: EncryptionType.METADATA,
+    type: EncryptionType.NONE,
     // coniksClient: {
     //   url: 'https://localhost:3001', // Coniks clinet URL (must be a localhost)
     //   binaries: {

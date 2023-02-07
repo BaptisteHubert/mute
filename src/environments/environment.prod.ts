@@ -4,19 +4,20 @@ import { LogLevel } from 'netflux'
 import { EncryptionType } from '@app/core/crypto/EncryptionType.model'
 import { networkSolution } from '@app/doc/network/solutions/networkSolution'
 
-const host = 'localhost' // FIXME: interpolation at build time required
+const host = 'mutehost.loria.fr' // FIXME: interpolation at build time required
 
 export const environment: IEnvironment = {
   ...defaultEnvironment, // we extend the default environment
 
   production: true,
 
-  network: networkSolution.NETFLUX,
+  network: networkSolution.LIBP2P,
 
   p2p: {
     // Signaling server URL
     // See https://github.com/coast-team/sigver
     signalingServer: `ws://${host}:8010`,
+    libp2pAddr : `/dns4/${host}/tcp/8004/wss/p2p-webrtc-star/`
   },
 
   cryptography: {

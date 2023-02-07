@@ -286,6 +286,12 @@ The peerID being a string, and the networkId being typed as a number in the whol
 To work around this, we are using a map that associates a peerId to its value in a number (for loop on the peerId and using the `charCodeAt()` function) 
 This way, we can have a number version of the peerID that can be used in the mute project. The original string peerID is mostly used for the dialing part (when we create the multiAddr to dial).
 
+#### Restrict access to a document
+Using libp2p, we saw that once you are connected to the libp2p signaling server, you can exchange with peers you connected with. But this is a problem in our app as someone that is on the document "document1" will modify the content of the document "document2" opened by another peer, connected to the same signaling server.
+To fix this, when we connect to a peer, we send him our document key as a message. He decodes the message *(sent as a Uint8Array)* and verify if the peer is on the same document as him. Only if he is, then his peerId is added to a list of *peerIDSOnTheSameDocument* list. This way, when the `peer:discovery` event is activated, we check if the peerID is known, then we launch a new connection to this peer. 
+The caveat is that instead of connecting to a peer instantly, it now takes at least 8 seconds before effectively connecting to the peer.
+
+
 ### 2.5. Implement pulsar
 
 To prove that the network service has been succesfully abstracted, we should implement pulsar as another solution. Being able to use it by only setting it up in the environment variable would be interesting. It would also serves as a good way of dceoupling pulsar from the code and keep it all tidy in one place.

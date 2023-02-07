@@ -216,14 +216,8 @@ export class NetworkServiceAbstracted implements OnDestroy {
       }
     }
 
-    randomCollaboratorNetworkId() : number{
-      const otherCollaborators = this.groupOfCollaborators.filter((i) => i.networkId !== this.myNetworkId)
-      return otherCollaborators[Math.ceil(Math.random() * otherCollaborators.length) - 1].networkId
-    }
-
     // --------- Angular related function -------
     ngOnDestroy(): void {
-      console.log("Destroyed the abstracted network service")
       this.leaveSubject.complete()
       this.messageSubject.complete()
       this.memberJoinSubject.complete()

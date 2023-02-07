@@ -284,16 +284,6 @@ export class DocService implements OnDestroy {
     })
   }
 
-  /**
-   * 
-   */
-  handleCollaboratorJoining(){
-    let self = this
-    this.network.onMemberJoin.subscribe((networkId) => {
-      self.network.tempNetworkId = networkId
-    })
-  }
-
   ngOnDestroy() {
     this.subs.forEach((s) => s.unsubscribe())
     window.clearInterval(this.saveDocInterval)
