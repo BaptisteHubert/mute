@@ -2,14 +2,11 @@
 /* eslint-disable @typescript-eslint/member-ordering */
 import { NgZone } from "@angular/core";
 import { CryptoService } from "@app/core/crypto";
-import { EncryptionType } from "@app/core/crypto/EncryptionType.model";
 import { environment } from "@environments/environment";
 import { WebGroup, WebGroupState } from "netflux";
 import { BehaviorSubject, Subject } from "rxjs";
-import { Message } from "../message_proto";
 import { INetworkSolutionService } from "./network.solution.service"
 import { StreamId, Streams, Streams as MuteCoreStreams, StreamsSubtype } from '@coast-team/mute-core'
-import { KeyAgreementBD, KeyState, Streams as MuteCryptoStreams, Symmetric } from '@coast-team/mute-crypto'
 import { ActivatedRoute } from "@angular/router";
 import { NetworkSolutionServiceFunctions } from "./network.solution.services.functions";
 

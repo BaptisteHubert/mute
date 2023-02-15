@@ -91,7 +91,7 @@ export class NetworkServiceAbstracted implements OnDestroy {
           this.solution = new NetfluxService(this.messageSubject, this.groupConnectionStatusSubject, this.serverConnectionStatusSubject, this.memberJoinSubject, this.memberLeaveSubject, zone, cryptoService, route)
           break;
         case networkSolution.LIBP2P:
-          this.solution = new Libp2pService(this.messageSubject, this.groupConnectionStatusSubject, this.serverConnectionStatusSubject, this.memberJoinSubject, this.memberLeaveSubject, zone, cryptoService, route)
+          this.solution = new Libp2pService(this.messageSubject, this.groupConnectionStatusSubject, this.serverConnectionStatusSubject, this.memberJoinSubject, this.memberLeaveSubject, cryptoService, route)
           break;
           break
         default :
